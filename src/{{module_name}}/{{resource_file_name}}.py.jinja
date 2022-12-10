@@ -1,0 +1,56 @@
+import json
+import logging
+import os
+from botocore.session import Session
+from cfn_resource_provider import ResourceProvider
+from {{module_name}}.logger import log
+
+"""
+jsonschema defining valid request properties for this resource
+"""
+request_schema = {
+    "type": "object",
+    "required": ["Value"],
+    "properties": {
+        "Value": {
+            "type": "string",
+            "description": "value to store",
+            "minLength": 1,
+        }
+    },
+}
+
+class {{resource_name}}Provider(ResourceProvider):
+    def __init__(self, botocore_session = None):
+        super({{resource_name}}Provider, self).__init__()
+        self.request_schema = request_schema
+
+    def create(self):
+        """
+          Create the resource and return the physical resource id
+        """
+        value = self.get("Value")
+        self.set_attribute("Value", value)
+        # ARNs and IDs are ideal
+        self.physical_resource_id = value
+
+    def update(self):
+        """
+        update the resource
+        """
+        value = self.get("Value")
+        self.set_attribute("Value", value)
+        self.physical_resource_id = value
+
+    def delete(self):
+        """
+        remove the resource
+        """
+        self.success("nothing to do")
+
+
+provider = {{resource_name}}Provider()
+
+
+def handler(event, context):
+    return provider.handle(event, context)

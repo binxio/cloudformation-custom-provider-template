@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: {{description}}
+Parameters:
+  S3BucketPrefix:
+    Type: String
+    Default: ''
+Resources:
+  CFNCustomProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: {{description}}
+      Code:
+        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
+        S3Key: 'lambdas/{{project_name}}-0.0.0.zip'
+      FunctionName: {{project_name}}
+      Handler: {{module_name}}.handler
+      MemorySize: 128
+      Timeout: 900
+      Role: !GetAtt 'LambdaRole.Arn'
+      Runtime: python{{python_version}}
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyName: WriteToLogGroupPermission
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                Resource: !GetAtt 'CFNCustomProviderLogGroup.Arn'
+
+  CFNCustomProviderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/{{project_name}}
+      RetentionInDays: 7

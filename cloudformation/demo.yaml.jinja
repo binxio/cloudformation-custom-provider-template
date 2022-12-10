@@ -1,0 +1,13 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Demo custom {{resource_name}} provider
+Resources:
+  '{{resource_name}}':
+    Type: '{{resource_type_name}}'
+    Properties:
+      Color: red
+
+Outputs:
+  '{{resource_name}}Id':
+    Value: !Ref '{{resource_name}}'
+    Description: the id of the {{resource_name}}

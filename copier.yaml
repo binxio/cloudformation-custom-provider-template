@@ -1,0 +1,90 @@
+# questions
+resource_name:
+  type: str
+  help: the custom resource name?
+  validator: >-
+    {% if not (resource_name | regex_search('^[A-Z][a-zA-Z0-9]+$')) %}
+    Must be a CloudFormation logical name, only letter and digits.
+    {% endif %}
+
+resource_file_name:
+  type: str
+  prompt: "no"
+  default: >-
+    {{ resource_name |
+    regex_replace('(.)([A-Z][a-z]+)', '\\1_\\2') |
+    regex_replace('([a-z0-9])([A-Z])', '\\1_\\2') | lower }}
+
+resource_type_name:
+  type: str
+  prompt: no
+  default: "Custom::{{resource_name}}"
+
+project_name:
+  type: str
+  help: "The name of your resource provider project?"
+  default: >-
+    cfn-{{ resource_file_name | regex_replace('_', '-') }}-provider
+  validator: >-
+    {% if not (project_name|regex_search('^[a-z][a-z0-9-]+$')) %}
+    must be all lowercase letters or digits with optional dashes.
+    {% endif %}
+
+module_name:
+  type: str
+  help: The name of your Python module?
+  default: >-
+    {{ project_name | regex_replace('-', '_') }}
+  validator: >-
+    {% if not (module_name| regex_search('^[a-z][a-z0-9_]+$')) %}
+     must be all lowercase letters or digits with optional underscore.
+    {% endif %}
+
+python_version:
+  type: str
+  help: Python version to use?
+  default: 3.9
+  choices:
+    - 3.9
+    - 3.8
+    - 3.7
+
+description:
+  type: str
+  help: Description of the resource type?
+
+author:
+  type: str
+  help: Your full name?
+  default: Mark van Holsteijn
+
+author_email:
+  type: str
+  help: Your email address?
+  validator: >-
+    {% if not (author_email | regex_search('([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\\.[A-Z|a-z]{2,})+')) %}
+    Must be an email address.
+    {% endif %}
+
+url:
+  type: str
+  help: URL to git source repository?
+  default: >-
+    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
+
+
+_skip_if_exists:
+    - tests/**
+    - 'src/{{module_name}}/**'
+
+_exclude:
+  - copier.yaml
+  - ~*
+  - __pycache__
+  - .DS_Store
+  - .git
+  - .idea
+  - build
+  - dist
+  - .gitignore
+  - venv
