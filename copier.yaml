@@ -30,6 +30,34 @@ project_name:
     must be all lowercase letters or digits with optional dashes.
     {% endif %}
 
+description:
+  type: str
+  help: short description for the custom provider?
+  default: >-
+    manages {{resource_name | 
+    regex_replace('(.)([A-Z][a-z]+)', '\\1 \\2') |
+    regex_replace('([a-z0-9])([A-Z])', '\\1 \\2') |
+    lower}}s 
+
+url:
+  type: str
+  help: URL to git source repository?
+  default: >-
+    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
+
+author:
+  type: str
+  help: Your full name?
+  default: Mark van Holsteijn
+
+author_email:
+  type: str
+  help: Your email address?
+  validator: >-
+    {% if not (author_email | regex_search('([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\\.[A-Z|a-z]{2,})+')) %}
+    Must be an email address.
+    {% endif %}
+
 module_name:
   type: str
   help: The name of your Python module?
@@ -49,33 +77,35 @@ python_version:
     - 3.8
     - 3.7
 
-description:
+s3_bucket_prefix:
   type: str
-  help: Description of the resource type?
-
-author:
-  type: str
-  help: Your full name?
-  default: Mark van Holsteijn
-
-author_email:
-  type: str
-  help: Your email address?
+  help: prefix for the S3 bucket name to store the lambda zipfiles?
+  default: binxio-public
   validator: >-
-    {% if not (author_email | regex_search('([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\\.[A-Z|a-z]{2,})+')) %}
-    Must be an email address.
+    {% if not (s3_bucket_prefix | regex_search('^[a-zA-Z][a-zA-Z0-9\-_]*$')) %}
+    bucket name prefix must start with a letter, and only contain letters, digits, underscore and dash.
     {% endif %}
 
-url:
+s3_bucket_region:
   type: str
-  help: URL to git source repository?
-  default: >-
-    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
+  help: S3 bucket region?
+  default: eu-central-1
+  validator: >-
+    {% if not (s3_bucket_region | regex_search('^[a-z]{2}-[a-z]+-[0-9]$')) %}
+    an AWS region name, like eu-central-1 or ap-southeast-2.
+    {% endif %}
 
 
 _skip_if_exists:
     - tests/**
     - 'src/{{module_name}}/**'
+    - 'cloudformation/demo*'
+    - 'cloudformation/{{project_name}}.yaml'
+    - README.md
+    - setup.cfg
+    - .release
+    - Pipfile
+    - pyproject.toml
 
 _exclude:
   - copier.yaml
@@ -86,5 +116,13 @@ _exclude:
   - .idea
   - build
   - dist
-  - .gitignore
   - venv
+
+_tasks:
+  # Strings get executed under system's default shell
+  - >- 
+    [[ ! -d .git ]] && 
+    ( git init && 
+    git add . && 
+    git commit -m 'initial import' 
+    && git tag v0.0.0) || exit 0
