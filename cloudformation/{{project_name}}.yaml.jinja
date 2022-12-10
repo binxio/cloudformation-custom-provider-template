@@ -36,7 +36,8 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Action:
+              - Effect: Allow
+                Action:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
                 Resource: !GetAtt 'CFNCustomProviderLogGroup.Arn'

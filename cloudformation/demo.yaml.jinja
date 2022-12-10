@@ -5,9 +5,15 @@ Resources:
   '{{resource_name}}':
     Type: '{{resource_type_name}}'
     Properties:
-      Color: red
+      Value: Hello World!
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:{{project_name}}'
+
 
 Outputs:
   '{{resource_name}}Id':
     Value: !Ref '{{resource_name}}'
     Description: the id of the {{resource_name}}
+
+  '{{resource_name}}Attribute':
+    Value: !GetAtt '{{resource_name}}.Value'
+    Description: attribute value of {{resource_name}}

@@ -71,8 +71,7 @@ Resources:
                   - ec2:DescribeRegions
                 Resource: 
                   - '*'
-              - Sid: CloudWatchLogsPolicy
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream

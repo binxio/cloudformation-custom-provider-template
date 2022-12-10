@@ -31,13 +31,15 @@ class {{resource_name}}Provider(ResourceProvider):
         """
         value = self.get("Value")
         self.set_attribute("Value", value)
-        # ARNs and IDs are ideal
         self.physical_resource_id = value
+        log.info("created resource with id %s", self.physical_resource_id)
+
 
     def update(self):
         """
         update the resource
         """
+        log.info("updating resource with id %s", self.physical_resource_id)
         value = self.get("Value")
         self.set_attribute("Value", value)
         self.physical_resource_id = value
@@ -46,6 +48,7 @@ class {{resource_name}}Provider(ResourceProvider):
         """
         remove the resource
         """
+        log.info("deleting resource with id %s", self.physical_resource_id)
         self.success("nothing to do")
 
 

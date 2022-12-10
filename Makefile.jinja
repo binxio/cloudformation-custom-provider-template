@@ -8,7 +8,7 @@ ALL_REGIONS=$(shell aws --region $(AWS_REGION) \
 		--query 'join(`\n`, Regions[?RegionName != `$(AWS_REGION)`].RegionName)' \
 		--output text)
 
-VERSION := $(shell git describe  --tags --dirty)
+VERSION := $(shell git describe  --tags --dirty | sed -e 's/^[^0-9]*//')
 
 build: target/$(NAME)-$(VERSION).zip		## build the lambda zip file
 
@@ -71,6 +71,7 @@ fmt:	## formats the source code
 	black src/*.py tests/*.py
 
 deploy-provider: target/$(NAME)-$(VERSION).zip  ## deploys the custom provider
+	sed -i -e 's^lambdas/$(NAME)-[0-9]*\.[0-9]*\.[0-9]\*[^\.]*\.'^lambdas/$(NAME)-$(VERSION).^g cloudformation/$(NAME).yaml
 	aws cloudformation deploy \
                 --capabilities CAPABILITY_IAM \
                 --stack-name $(NAME) \
@@ -104,4 +105,11 @@ delete-demo: ## deletes the demo stack
 	aws cloudformation delete-stack --stack-name $(NAME)-demo
 	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)-demo
 
+tag-patch-release: ## create a tag for a new patch release
+	pipenv run git-release-tag bump --level patch
 
+tag-minor-release: ## create a tag for a new minor release
+	pipenv run git-release-tag bump --level minor
+
+tag-major-release: ## create a tag for new major release
+	pipenv run git-release-tag bump --level major
