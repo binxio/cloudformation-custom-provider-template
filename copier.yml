@@ -1,0 +1,35 @@
+# questions
+resource_name:
+    type: str
+    help: The name of your custom resource?
+    validator: "{% if not resource_name|regex_search(r'^Custom::[A-Z][a-zA-Z0-9]+$') %}Must be a CloudFormation custom type name, eg Custom::Custom.{% endif %}"
+
+project_name:
+    type: str
+    help: The name of your resource provider project?
+    default: cfn-{{ resource_name | regex_replace('(.)([A-Z][a-z]+)', r'\1-\2') | regex_replace(('([a-z0-9])([A-Z])', r'\1-\2') | lower }}_provider
+    validator: "{% if not module_name|regex_search(r'^[a-z][a-z0-9-]+$') %}must be all lowercase letters or digits with optional underscore.{% endif %}"
+
+module_name:
+    type: str
+    help: The name of your Python module?
+    default: {{ resource_name | regex_replace('-', '_')}}
+    validator: "{% if not module_name|regex_search(r'^[a-z][a-z0-9_]+$') %}must be all lowercase letters or digits with optional underscore.{% endif %}"
+
+description:
+    type: str
+    help: Description of the resource type?
+
+author:
+    type: str
+    help: Your full name?
+
+email:
+    type: str
+    help: Your email address?
+
+project_git_url:
+    type: str
+    help: URL to git source repository?
+
+
