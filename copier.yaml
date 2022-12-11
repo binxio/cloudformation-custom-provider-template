@@ -1,28 +1,38 @@
 # questions
 resource_name:
   type: str
-  help: the custom resource name
+  help: the name of your custom resource type?
   validator: >-
     {% if not (resource_name | regex_search('^[A-Z][a-zA-Z0-9]+$')) %}
-    Must be a CloudFormation logical name, only letter and digits.
+    Must be a CloudFormation logical name, only letter and digits. excluding Custom::
     {% endif %}
+
+resource_type_name:
+  type: str
+  help: the full custom resource type name in CloudFormation. just press return.
+  prompt: false
+  default: "Custom::{{resource_name}}"
+  validator: >-
+    {% if resource_type_name != ("Custom::" + resource_name) %} 
+    The type name must be Custom::{{resource_name}}.
+    {% endif %}  
 
 resource_file_name:
   type: str
-  prompt: "no"
+  help: the python custom resource module base filename. just press return.
+  prompt: false
   default: >-
     {{ resource_name |
     regex_replace('(.)([A-Z][a-z]+)', '\\1_\\2') |
     regex_replace('([a-z0-9])([A-Z])', '\\1_\\2') | lower }}
-
-resource_type_name:
-  type: str
-  prompt: no
-  default: "Custom::{{resource_name}}"
+  validator: |
+    {% if not (resource_file_name | regex_search('[a-z0-9_]_')) %}
+    the filename must only consist of lowercase letters, digits and underscore.
+    {% endif %}
 
 project_name:
   type: str
-  help: "The name of your resource provider project?"
+  help: The name of your resource provider project?
   default: >-
     cfn-{{ resource_file_name | regex_replace('_', '-') }}-provider
   validator: >-
@@ -30,43 +40,24 @@ project_name:
     must be all lowercase letters or digits with optional dashes.
     {% endif %}
 
-description:
-  type: str
-  help: short description for the custom provider
-  default: >-
-    manages {{resource_name | 
-    regex_replace('(.)([A-Z][a-z]+)', '\\1 \\2') |
-    regex_replace('([a-z0-9])([A-Z])', '\\1 \\2') |
-    lower}}s 
-
-author:
-  type: str
-  help: Your full name
-  default: Mark van Holsteijn
-
-author_email:
-  type: str
-  help: Your email address
-  validator: >-
-    {% if not (author_email | regex_search('([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\\.[A-Z|a-z]{2,})+')) %}
-    Must be an email address.
-    {% endif %}
-
-url:
-  type: str
-  help: URL to git source repository
-  default: >-
-    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
-
 module_name:
   type: str
-  help: The name of your Python module
+  help: The name of your Python module?
   default: >-
     {{ project_name | regex_replace('-', '_') }}
   validator: >-
     {% if not (module_name| regex_search('^[a-z][a-z0-9_]+$')) %}
      must be all lowercase letters or digits with optional underscore.
     {% endif %}
+
+description:
+  type: str
+  help: a short description for the custom provider?
+  default: >-
+    manages {{resource_name | 
+    regex_replace('(.)([A-Z][a-z]+)', '\\1 \\2') |
+    regex_replace('([a-z0-9])([A-Z])', '\\1 \\2') |
+    lower}}s 
 
 python_version:
   type: str
@@ -77,9 +68,31 @@ python_version:
     - 3.8
     - 3.7
 
+author:
+  type: str
+  help: Your full name?
+  validator: |
+    {% if not author.strip() %}
+    Slightly more than nothing would be awesome!
+    {% endif %}
+
+author_email:
+  type: str
+  help: Your email address?
+  validator: |
+    {% if not (author_email | regex_search('([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\\.[A-Z|a-z]{2,})+')) %}
+    Must be an email address.
+    {% endif %}
+
+url:
+  type: str
+  help: the URL to git source repository?
+  default: >-
+    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
+
 s3_bucket_prefix:
   type: str
-  help: prefix for the S3 bucket name to store the lambda zipfiles
+  help: prefix for the S3 bucket name to store the lambda zipfiles?
   default: binxio-public
   validator: >-
     {% if not (s3_bucket_prefix | regex_search('^[a-zA-Z][a-zA-Z0-9\-_]*$')) %}
