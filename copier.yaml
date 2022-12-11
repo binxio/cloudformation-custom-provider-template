@@ -119,10 +119,10 @@ _exclude:
   - venv
 
 _tasks:
-  # Strings get executed under system's default shell
+  # do a git init
   - >- 
     [[ ! -d .git ]] && 
     ( git init && 
     git add . && 
     git commit -m 'initial import' 
-    && git tag v0.0.0) || exit 0
+    && git tag 0.0.0) || exit 0

@@ -1,4 +1,8 @@
 from {{module_name}} import {{resource_file_name}}
 
-def handler(request, response):
-    return {{resource_file_name}}.handler(request, response)
+def handler(request, context):
+    return {{resource_file_name}}.handler(request, context)
+
+# If you want the handle multiple resource types, add an if statement
+# on request["ResourceType"] to match up with a custom provider handler.
+# see https://github.com/binxio/cfn-certificate-provider/blob/master/src/provider.py#L10-L16

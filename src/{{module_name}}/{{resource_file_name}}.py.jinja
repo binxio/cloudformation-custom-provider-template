@@ -6,7 +6,7 @@ from cfn_resource_provider import ResourceProvider
 from {{module_name}}.logger import log
 
 """
-jsonschema defining valid request properties for this resource
+jsonschema defining valid request properties for this {{resource_type_name}}
 """
 request_schema = {
     "type": "object",
@@ -25,6 +25,10 @@ class {{resource_name}}Provider(ResourceProvider):
         super({{resource_name}}Provider, self).__init__()
         self.request_schema = request_schema
 
+    def is_valid_request(self):
+        # add more complex validation here.
+        return super().is_valid_request()
+
     def create(self):
         """
           Create the resource and return the physical resource id
@@ -33,7 +37,6 @@ class {{resource_name}}Provider(ResourceProvider):
         self.set_attribute("Value", value)
         self.physical_resource_id = value
         log.info("created resource with id %s", self.physical_resource_id)
-
 
     def update(self):
         """
