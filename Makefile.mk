@@ -21,7 +21,9 @@ target/$(NAME)-$(VERSION).zip: src/ pyproject.toml setup.cfg
 		docker rm -f $$ID && \
 		chmod ugo+r target/$(NAME)-$(VERSION).zip
 
-deploy: target/$(NAME)-$(VERSION).zip		## AWS lambda zipfile to bucket
+deploy: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## AWS lambda zipfile to bucket
+
+target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX): target/$(NAME)-$(VERSION).zip
 	aws s3 --region $(AWS_REGION) \
 		cp --acl public-read \
 		cloudformation/$(NAME).yaml \
@@ -30,11 +32,9 @@ deploy: target/$(NAME)-$(VERSION).zip		## AWS lambda zipfile to bucket
 		cp --acl public-read \
 		target/$(NAME)-$(VERSION).zip \
 		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip
+	touch target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)
 
-target/$(NAME)-$(VERSION).zip.deployed: target/$(NAME)-$(VERSION).zip
-	touch target/$(NAME)-$(VERSION).zip.deployed
-
-deploy-all-regions: target/$(NAME)-$(VERSION).zip.deployed	## zip file to all regional buckets
+deploy-all-regions: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## zip file to all regional buckets
 	@for REGION in $(ALL_REGIONS); do \
 		echo "copying to region $$REGION.." ; \
 		aws s3 --region $$REGION \
@@ -50,7 +50,7 @@ undeploy:
                         rm  \
                         s3://$(S3_BUCKET_PREFIX)-$$REGION/lambdas/$(NAME)-$(VERSION).zip; \
         done
-	rm -f target/$(NAME)-$(VERSION).zip.deployed
+	rm -f target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)
 
 
 
@@ -70,8 +70,8 @@ test-templates:     ## validate CloudFormation templates
 fmt:	## formats the source code
 	black src/*.py tests/*.py
 
-deploy-provider: target/$(NAME)-$(VERSION).zip.deployed  ## deploys the custom provider
-	sed -i -e 's^lambdas/$(NAME)-[0-9]*\.[0-9]*\.[0-9]\*[^\.]*\.'^lambdas/$(NAME)-$(VERSION).^g cloudformation/$(NAME).yaml
+deploy-provider: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)  ## deploys the custom provider
+	sed -i -e 's^lambdas/$(NAME)-[0-9]*\.[0-9]*\.[0-9]*[^\.]*\.'^lambdas/$(NAME)-$(VERSION).^g cloudformation/$(NAME).yaml
 	aws cloudformation deploy \
                 --capabilities CAPABILITY_IAM \
                 --stack-name $(NAME) \
