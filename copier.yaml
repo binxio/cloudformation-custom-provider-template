@@ -1,7 +1,7 @@
 # questions
 resource_name:
   type: str
-  help: the custom resource name?
+  help: the custom resource name
   validator: >-
     {% if not (resource_name | regex_search('^[A-Z][a-zA-Z0-9]+$')) %}
     Must be a CloudFormation logical name, only letter and digits.
@@ -32,35 +32,35 @@ project_name:
 
 description:
   type: str
-  help: short description for the custom provider?
+  help: short description for the custom provider
   default: >-
     manages {{resource_name | 
     regex_replace('(.)([A-Z][a-z]+)', '\\1 \\2') |
     regex_replace('([a-z0-9])([A-Z])', '\\1 \\2') |
     lower}}s 
 
-url:
-  type: str
-  help: URL to git source repository?
-  default: >-
-    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
-
 author:
   type: str
-  help: Your full name?
+  help: Your full name
   default: Mark van Holsteijn
 
 author_email:
   type: str
-  help: Your email address?
+  help: Your email address
   validator: >-
     {% if not (author_email | regex_search('([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\\.[A-Z|a-z]{2,})+')) %}
     Must be an email address.
     {% endif %}
 
+url:
+  type: str
+  help: URL to git source repository
+  default: >-
+    https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
+
 module_name:
   type: str
-  help: The name of your Python module?
+  help: The name of your Python module
   default: >-
     {{ project_name | regex_replace('-', '_') }}
   validator: >-
@@ -70,7 +70,7 @@ module_name:
 
 python_version:
   type: str
-  help: Python version to use?
+  help: Python version to use
   default: 3.9
   choices:
     - 3.9
@@ -79,7 +79,7 @@ python_version:
 
 s3_bucket_prefix:
   type: str
-  help: prefix for the S3 bucket name to store the lambda zipfiles?
+  help: prefix for the S3 bucket name to store the lambda zipfiles
   default: binxio-public
   validator: >-
     {% if not (s3_bucket_prefix | regex_search('^[a-zA-Z][a-zA-Z0-9\-_]*$')) %}
@@ -88,7 +88,7 @@ s3_bucket_prefix:
 
 s3_bucket_region:
   type: str
-  help: S3 bucket region?
+  help: S3 bucket region
   default: eu-central-1
   validator: >-
     {% if not (s3_bucket_region | regex_search('^[a-z]{2}-[a-z]+-[0-9]$')) %}
