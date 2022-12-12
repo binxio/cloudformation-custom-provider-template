@@ -2,8 +2,8 @@
 version: 0.2
 env:
   variables:
-    LAMBDA_BUCKET_PREFIX: binxio-public
-    LAMBDA_BUCKET_REGION: eu-central-1
+    LAMBDA_BUCKET_PREFIX: {{s3_bucket_prefix}}
+    LAMBDA_BUCKET_REGION: {{s3_bucket_region}}
 phases:
   install:
     runtime-versions:
