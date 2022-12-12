@@ -53,10 +53,8 @@ undeploy:
 	rm -f target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)
 
 
-
-clean:	## clean all intermediate files and directories
-	git clean -f -d -i
-	rm -rf target src/*.pyc tests/*.pyc
+clobber:	## delete all files not under version control
+	git clean -f -d -x
 
 Pipfile.lock: Pipfile setup.cfg
 	pipenv update
@@ -68,7 +66,7 @@ test-templates:     ## validate CloudFormation templates
 	for n in ./cloudformation/*.yaml ; do aws cloudformation validate-template --template-body file://$$n ; done
 
 fmt:	## formats the source code
-	black src/*.py tests/*.py
+	black src/ tests/
 
 deploy-provider: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)  ## deploys the custom provider
 	sed -i -e 's^lambdas/$(NAME)-[0-9]*\.[0-9]*\.[0-9]*[^\.]*\.'^lambdas/$(NAME)-$(VERSION).^g cloudformation/$(NAME).yaml
@@ -95,7 +93,7 @@ delete-pipeline:  ## deletes the CI/CD deployment pipeline
 	aws cloudformation delete-stack --stack-name $(NAME)-pipeline
 	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)-pipeline
 
-demo:	## deploys the demo stack
+deploy-demo:	## deploys the demo stack
 	aws cloudformation deploy --stack-name $(NAME)-demo \
 		--template-file ./cloudformation/demo.yaml \
 		--capabilities CAPABILITY_NAMED_IAM \

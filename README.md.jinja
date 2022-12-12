@@ -4,21 +4,25 @@
 ## Installation
 To install this custom resource provider, type:
 
-```bassh
-aws cloudformation deploy \
+```bash
+aws cloudformation create-stack \
        --capabilities CAPABILITY_IAM \
        --stack-name {{project_name}} \
-       --template-file s3://binxio-public-$(aws configure get-value region)/lambdas/{{project_name}}-0.0.0.yaml
+       --template-url s3://{{s3_bucket_prefix}}-{{s3_bucket_region}}/lambdas/{{project_name}}-0.0.0.yaml
+
+aws cloudformation wait stack-create-complete \
+       --stack-name {{project_name}}
 ```
 or use [![](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName={{project_name}}&templateURL=https://binxio-public-eu-central-1.s3.amazonaws.com/lambdas/{{project_name}}-0.0.0.yaml)
 
 ## Demo
-To install the simple sample of the Custom Resource, type:
+To install the simple sample of the Custom {{resource_name}}, type:
 
 ```sh
+git checkout {{url}}.git
+cd {{ url | basename }}
 aws cloudformation deploy \
     --capabilities CAPABILITY_NAMED_IAM \
-    --stack-name cfn-secret-provider-demo \
-    --template-body file://cloudformation/demo-stack.yaml
+    --stack-name {{project_name}}-demo \
+    --template-body file://cloudformation/demo.yaml
 ```
-
