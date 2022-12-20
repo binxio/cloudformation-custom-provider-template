@@ -12,6 +12,7 @@ resource_type_name:
   help: the full custom resource type name in CloudFormation. just press return.
   prompt: false
   default: "Custom::{{resource_name}}"
+  when: false
   validator: >-
     {% if resource_type_name != ("Custom::" + resource_name) %} 
     The type name must be Custom::{{resource_name}}.
@@ -20,7 +21,7 @@ resource_type_name:
 resource_file_name:
   type: str
   help: the python custom resource module base filename. just press return.
-  prompt: false
+  when: false
   default: >-
     {{ resource_name |
     regex_replace('(.)([A-Z][a-z]+)', '\\1_\\2') |
