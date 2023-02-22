@@ -1,4 +1,5 @@
 S3_BUCKET=$(S3_BUCKET_PREFIX)-$(AWS_REGION)
+S3_OBJECT_ACL=private
 ALL_REGIONS=$(shell aws --region $(AWS_REGION) \
 		ec2 describe-regions 		\
 		--query 'join(`\n`, Regions[?RegionName != `$(AWS_REGION)`].RegionName)' \
@@ -8,10 +9,19 @@ VERSION := $(shell git describe  --tags --dirty)
 
 build: target/$(NAME)-$(VERSION).zip		## build the lambda zip file
 
-help:           ## Show this help.
-		@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/:[^#]*##/: ##/' -e 's/[ 	]*##[ 	]*/ /' | \
-		awk -F: '{printf "%-20s -", $$1; $$1=""; print $$0}' | \
-		sort
+fmt:	## formats the source code
+	black src/ tests/
+
+test:	## run python unit tests
+	pipenv run tox
+
+test-record: ## run python unit tests, while recording the boto3 calls
+	RECORD_UNITTEST_STUBS=true pipenv run tox
+
+test-templates:     ## validate CloudFormation templates
+	for n in ./cloudformation/*.yaml ; do aws cloudformation validate-template --template-body file://$$n ; done
+
+deploy: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## AWS lambda zipfile to bucket
 
 target/$(NAME)-$(VERSION).zip: src/ pyproject.toml setup.cfg
 	mkdir -p target/content
@@ -21,29 +31,27 @@ target/$(NAME)-$(VERSION).zip: src/ pyproject.toml setup.cfg
 		docker rm -f $$ID && \
 		chmod ugo+r target/$(NAME)-$(VERSION).zip
 
-deploy: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## AWS lambda zipfile to bucket
-
 target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX): target/$(NAME)-$(VERSION).zip
 	aws s3 --region $(AWS_REGION) \
-		cp --acl public-read \
+		cp --acl $(S3_OBJECT_ACL) \
 		cloudformation/$(NAME).yaml \
 		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).yaml
 	aws s3 --region $(AWS_REGION) \
-		cp --acl public-read \
+		cp --acl $(S3_OBJECT_ACL) \
 		target/$(NAME)-$(VERSION).zip \
 		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip
 	touch target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)
 
-deploy-all-regions: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## zip file to all regional buckets
+deploy-all-regions: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## AWS lambda zipfiles to all regional buckets
 	@for REGION in $(ALL_REGIONS); do \
 		echo "copying to region $$REGION.." ; \
 		aws s3 --region $$REGION \
-			cp  --acl public-read \
+			cp  --acl $(S3_OBJECT_ACL) \
 			s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip \
 			s3://$(S3_BUCKET_PREFIX)-$$REGION/lambdas/$(NAME)-$(VERSION).zip; \
 	done
 
-undeploy:
+undeploy-all-regions:	## deletes AWS lambda zipfile of this release from all buckets in all regions
 	@for REGION in $(ALL_REGIONS); do \
                 echo "removing lamdba from region $$REGION.." ; \
                 aws s3 --region $(AWS_REGION) \
@@ -52,21 +60,8 @@ undeploy:
         done
 	rm -f target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)
 
-
-clobber:	## delete all files not under version control
-	git clean -f -d -x
-
-Pipfile.lock: Pipfile setup.cfg
+Pipfile.lock: Pipfile setup.cfg pyproject.toml
 	pipenv update
-
-test:	## run python unit tests
-	pipenv run tox
-
-test-templates:     ## validate CloudFormation templates
-	for n in ./cloudformation/*.yaml ; do aws cloudformation validate-template --template-body file://$$n ; done
-
-fmt:	## formats the source code
-	black src/ tests/
 
 deploy-provider: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)  ## deploys the custom provider
 	sed -i -e 's^lambdas/$(NAME)-[0-9]*\.[0-9]*\.[0-9]*[^\.]*\.'^lambdas/$(NAME)-$(VERSION).^g cloudformation/$(NAME).yaml
@@ -111,3 +106,10 @@ tag-minor-release: ## create a tag for a new minor release
 
 tag-major-release: ## create a tag for new major release
 	pipenv run git-release-tag bump --level major
+
+show-version: ## shows the current version of the workspace
+	pipenv run git-release-tag show .
+
+help:           ## Show this help.
+		@egrep -h ':[^#]*##' $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/:[^#]*##/: ##/' -e 's/[ 	]*##[ 	]*/ /' | \
+		awk -F: '{printf "%-20s -", $$1; $$1=""; print $$0}'

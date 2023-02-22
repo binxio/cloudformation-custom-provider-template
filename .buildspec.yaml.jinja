@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     LAMBDA_BUCKET_PREFIX: {{s3_bucket_prefix}}
-    LAMBDA_BUCKET_REGION: {{s3_bucket_region}}
+    LAMBDA_BUCKET_REGION: {{aws_region}}
 phases:
   install:
     runtime-versions:

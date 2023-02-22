@@ -10,7 +10,6 @@ resource_name:
 resource_type_name:
   type: str
   help: the full custom resource type name in CloudFormation. just press return.
-  prompt: false
   default: "Custom::{{resource_name}}"
   when: false
   validator: >-
@@ -91,24 +90,38 @@ url:
   default: >-
     https://github.com/{{ author_email | regex_replace('[^@]*@', '') | regex_replace('\\.', '-')}}/{{project_name}}
 
+aws_profile:
+  type: str
+  help: the AWS profile name
+  default: default
+  validator: >-
+    {% if not aws_profile %}
+    aws profile name must be specified
+    {% endif %} 
+
+aws_region:
+  type: str
+  help: the AWS region name
+  default: eu-central-1
+  validator: >-
+    {% if not (aws_region | regex_search('^[a-z]{2}-[a-z]+-[0-9]$')) %}
+    specify an AWS region name, like eu-central-1 or ap-southeast-2.
+    {% endif %}
+
 s3_bucket_prefix:
   type: str
   help: prefix for the S3 bucket name to store the lambda zipfiles?
-  default: binxio-public
   validator: >-
     {% if not (s3_bucket_prefix | regex_search('^[a-zA-Z][a-zA-Z0-9\-_]*$')) %}
     bucket name prefix must start with a letter, and only contain letters, digits, underscore and dash.
     {% endif %}
 
-s3_bucket_region:
+s3_object_acl:
   type: str
-  help: S3 bucket region
-  default: eu-central-1
-  validator: >-
-    {% if not (s3_bucket_region | regex_search('^[a-z]{2}-[a-z]+-[0-9]$')) %}
-    an AWS region name, like eu-central-1 or ap-southeast-2.
-    {% endif %}
-
+  help: Access to lambda zip files?
+  choices:
+    private: private
+    public: public-read
 
 _skip_if_exists:
     - tests/**
@@ -131,6 +144,7 @@ _exclude:
   - build
   - dist
   - venv
+  - README.md
 
 _tasks:
   # do a git init

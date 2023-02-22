@@ -1,0 +1,74 @@
+"""
+Generated base class for the crud unit test. The setup will provide stubbed
+responses for all recorded requests.
+
+** generated code - do not edit **
+"""
+import os
+import unittest
+import boto3
+import botocore.session
+from botocore.stub import Stubber
+from botocore_stubber_recorder import BotoRecorder, UnitTestGenerator
+from pathlib import Path
+
+
+class CrudUnitTestBase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.default_session_configuration = {
+            "profile_name": "{{aws_profile}}",
+            "region_name": "{{aws_region}}",
+        }
+        self.record = os.getenv("RECORD_UNITTEST_STUBS", "false").lower() == "true"
+        self.anonimize = False
+        self.unflatten = False
+
+    def setUp(self) -> None:
+        if self.record:
+            self.start_recorder()
+        else:
+            self.activate_stubs()
+
+    def activate_stubs(self) -> None:
+        """
+        add stubs for all AWS API calls
+        """
+        boto3.DEFAULT_SESSION = None
+        self.botocore_session = botocore.session.get_session()
+        boto3.setup_default_session(botocore_session=self.botocore_session)
+        self.session = boto3.DEFAULT_SESSION
+        self.session.client = lambda x: self.clients[x]
+
+        self.clients = {}
+        self.stubs = {}
+
+        for _, stub in self.stubs.items():
+            stub.activate()
+
+    def tearDown(self) -> None:
+        boto3.DEFAULT_SESSION = None
+        if self.record:
+            self.write_stubs()
+        else:
+            self.deactivate_stubs()
+
+    def deactivate_stubs(self) -> None:
+        """
+        check all api calls were executed
+        """
+        for service, stub in self.stubs.items():
+            stub.assert_no_pending_responses()
+            stub.deactivate()
+
+    def start_recorder(self):
+        boto3.DEFAULT_SESSION = None
+        boto3.setup_default_session(**self.default_session_configuration)
+        self.recorder = BotoRecorder(boto3.DEFAULT_SESSION)
+        self.session = self.recorder.session
+
+    def write_stubs(self):
+        test_name = "crud"
+        directory = Path(__file__).parent.parent
+        generator = UnitTestGenerator(test_name, directory, "")
+        generator.generate(self.recorder, self.anonimize, self.unflatten)
