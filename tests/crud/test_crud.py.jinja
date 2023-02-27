@@ -20,18 +20,18 @@ class CrudUnitTest(CrudUnitTestBase):
 
     def test_create(self):
 
-        request = self.create_request('Create', Value="Rd")
+        request = self.create_request('Create', Value="Red")
         response = self.handle(request, {})
 
         self.assertTrue('PhysicalResourceId' in response)
-        self.assertEqual('SUCCESS', response['Status'] == 'SUCCESS',response['Reason'])
+        self.assertEqual('SUCCESS', response['Status'], response['Reason'])
         self.assertEqual('Red', response.get("PhysicalResourceId"))
         self.assertEqual('Red', response["Data"].get("Value"))
 
         physical_resource_id = response['PhysicalResourceId']
         request = self.create_request('Update', Value="Green", physical_resource_id=physical_resource_id)
         response = self.handle(request, {})
-        self.assertEqual('SUCCESS', response['Status'] == 'SUCCESS',response['Reason'])
+        self.assertEqual('SUCCESS', response['Status'], response['Reason'])
         self.assertEqual('Green', response.get("PhysicalResourceId"))
         self.assertEqual('Green', response["Data"].get("Value"))
 
@@ -39,11 +39,11 @@ class CrudUnitTest(CrudUnitTestBase):
 
         request = self.create_request('Delete', physical_resource_id=physical_resource_id)
         response = self.handle(request, {})
-        self.assertEqual('SUCCESS', response['Status'] == 'SUCCESS',response['Reason'])
+        self.assertEqual('SUCCESS', response['Status'], response['Reason'])
 
         request = self.create_request('Delete', physical_resource_id=new_physical_resource_id)
         response = self.handle(request, {})
-        self.assertEqual('SUCCESS', response['Status'] == 'SUCCESS',response['Reason'])
+        self.assertEqual('SUCCESS', response['Status'], response['Reason'])
 
 
     @staticmethod
