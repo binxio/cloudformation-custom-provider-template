@@ -125,9 +125,10 @@ This will:
 
 To show the current version of the workspace, type:
 
-``shell
+```shell
 make show-version
-``
+```
+
 The utility [git-release-tag](https://github.com/binxio/git-release-tag)
 implements this functionality.
 
