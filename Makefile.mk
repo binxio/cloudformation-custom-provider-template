@@ -1,3 +1,7 @@
+ifeq (, $(shell which poetry))
+$(error "poetry not found, please see https://python-poetry.org/ for installation instructions")
+endif
+
 S3_BUCKET=$(S3_BUCKET_PREFIX)-$(AWS_REGION)
 S3_OBJECT_ACL=private
 ALL_REGIONS=$(shell aws --region $(AWS_REGION) \
@@ -10,20 +14,20 @@ VERSION := $(shell git describe  --tags --dirty)
 build: target/$(NAME)-$(VERSION).zip		## build the lambda zip file
 
 fmt:	## formats the source code
-	black src/ tests/
+	poetry run black src/ tests/
 
 test:	## run python unit tests
-	pipenv run tox
+	poetry run tox
 
 test-record: ## run python unit tests, while recording the boto3 calls
-	RECORD_UNITTEST_STUBS=true pipenv run tox
+	RECORD_UNITTEST_STUBS=true poetry run tox
 
 test-templates:     ## validate CloudFormation templates
 	for n in ./cloudformation/*.yaml ; do aws cloudformation validate-template --template-body file://$$n ; done
 
 deploy: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)	## AWS lambda zipfile to bucket
 
-target/$(NAME)-$(VERSION).zip: src/ pyproject.toml setup.cfg
+target/$(NAME)-$(VERSION).zip: src/ pyproject.toml poetry.lock Dockerfile.lambda
 	mkdir -p target/content
 	docker build --build-arg ZIPFILE=$(NAME)-$(VERSION).zip -t $(NAME)-lambda:$(VERSION) -f Dockerfile.lambda . && \
 		ID=$$(docker create $(NAME)-lambda:$(VERSION) /bin/true) && \
@@ -60,8 +64,8 @@ undeploy-all-regions:	## deletes AWS lambda zipfile of this release from all buc
         done
 	rm -f target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)
 
-Pipfile.lock: Pipfile setup.cfg pyproject.toml
-	pipenv update
+poetry.lock: pyproject.toml
+	poetry lock
 
 deploy-provider: target/$(NAME)-$(VERSION).zip@$(S3_BUCKET_PREFIX)  ## deploys the custom provider
 	sed -i -e 's^lambdas/$(NAME)-[0-9]*\.[0-9]*\.[0-9]*[^\.]*\.'^lambdas/$(NAME)-$(VERSION).^g cloudformation/$(NAME).yaml
@@ -99,16 +103,16 @@ delete-demo: ## deletes the demo stack
 	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)-demo
 
 tag-patch-release: ## create a tag for a new patch release
-	pipenv run git-release-tag bump --level patch
+	poetry run git-release-tag bump --level patch
 
 tag-minor-release: ## create a tag for a new minor release
-	pipenv run git-release-tag bump --level minor
+	poetry run git-release-tag bump --level minor
 
 tag-major-release: ## create a tag for new major release
-	pipenv run git-release-tag bump --level major
+	poetry run git-release-tag bump --level major
 
 show-version: ## shows the current version of the workspace
-	pipenv run git-release-tag show .
+	poetry run git-release-tag show .
 
 help:           ## Show this help.
 		@egrep -h ':[^#]*##' $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/:[^#]*##/: ##/' -e 's/[ 	]*##[ 	]*/ /' | \

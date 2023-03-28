@@ -129,9 +129,7 @@ _skip_if_exists:
     - 'cloudformation/demo*'
     - 'cloudformation/{{project_name}}.yaml'
     - README.md
-    - setup.cfg
     - .release
-    - Pipfile
     - pyproject.toml
 
 _exclude:
@@ -152,5 +150,5 @@ _tasks:
     [[ ! -d .git ]] && 
     ( git init && 
     git add . && 
-    git commit -m 'initial import' 
+    git commit -m 'Initial commit'
     && git tag 0.0.0) || exit 0
