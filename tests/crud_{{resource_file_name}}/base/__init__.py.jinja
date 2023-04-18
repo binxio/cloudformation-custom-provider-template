@@ -68,7 +68,7 @@ class CrudUnitTestBase(unittest.TestCase):
         self.session = self.recorder.session
 
     def write_stubs(self):
-        test_name = "crud"
+        test_name = "crud_{{resource_file_name}}"
         directory = Path(__file__).parent.parent
         generator = UnitTestGenerator(test_name, directory, "")
         generator.generate(self.recorder, self.anonimize, self.unflatten)
