@@ -62,11 +62,12 @@ description:
 python_version:
   type: str
   help: Python version to use
-  default: 3.9
+  default: '3.12'
   choices:
-    - 3.9
-    - 3.8
-    - 3.7
+    - '3.12'
+    - '3.11'
+    - '3.10'
+    - '3.9'
 
 author:
   type: str
@@ -99,6 +100,14 @@ aws_profile:
     aws profile name must be specified
     {% endif %} 
 
+aws_account:
+  type: str
+  help: source account for the AWS ECR image repository
+  validator: >-
+      {% if not (aws_account | regex_search('^[0-9]{12}$')) %}
+      aws account must be 12 digits
+      {% endif %}
+
 aws_region:
   type: str
   help: the AWS region name
@@ -108,20 +117,9 @@ aws_region:
     specify an AWS region name, like eu-central-1 or ap-southeast-2.
     {% endif %}
 
-s3_bucket_prefix:
-  type: str
-  help: prefix for the S3 bucket name to store the lambda zipfiles?
-  validator: >-
-    {% if not (s3_bucket_prefix | regex_search('^[a-zA-Z][a-zA-Z0-9\-_]*$')) %}
-    bucket name prefix must start with a letter, and only contain letters, digits, underscore and dash.
-    {% endif %}
-
-s3_object_acl:
-  type: str
-  help: Access to lambda zip files?
-  choices:
-    private: private
-    public: public-read
+allow_public_access:
+  type: bool
+  help: Allow public access to the lambda image?
 
 _skip_if_exists:
     - tests/**

@@ -5,7 +5,7 @@ This [copier](https://copier.readthedocs.io/) template  allows you to  create a 
 Out-of-the-box features include:
 - create the source for a custom cloudformation resource provider
 - support for semantic versioning your provider using [git-release-tag](https://github.com/binxio/git-release-tag)
-- distribute the provider to buckets in all AWS regions in the world
+- deploy the provider to your ECR repository
 - re-recordable unit tests using [botocore stubber recorder](https://pypi.org/project/botocore-stubber-recorder/)
 - deployable [AWS Codebuild](https://aws.amazon.com/codebuild/) pipeline
 
@@ -15,7 +15,7 @@ because it does not yet exist. To create the project, type:
 
 ```shell
 pip install copier
-copier https://github.com/binxio/cloudformation-custom-provider-template /tmp/cfn-app-runner-custom-domain-provider
+copier --trust https://github.com/binxio/cloudformation-custom-provider-template /tmp/cfn-app-runner-custom-domain-provider
 
 🎤 the name of your custom resource type?
    AppRunnerCustomDomain
@@ -26,21 +26,21 @@ copier https://github.com/binxio/cloudformation-custom-provider-template /tmp/cf
 🎤 a short description for the custom provider?
    manages app runner custom domains 
 🎤 Python version to use
-   3.9
+   3.12
 🎤 Your full name?
    Mark van Holsteijn
 🎤 Your email address?
    mark.vanholsteijn@xebia.com
 🎤 the URL to git source repository?
-   https://github.com/binxio/cfn-app-runner-custom-domain-provider
+   https://github.com/binxio/cfn-app-runner-custom-domain-provider.git
 🎤 the AWS profile name
    integration-test
 🎤 the AWS region name
    eu-central-1
-🎤 prefix for the S3 bucket name to store the lambda zipfiles?
-   binxio-public
-🎤 Access to lambda zip files?
-   public
+🎤 the AWS account
+   123456789012
+🎤 Allow public access to the lambda image?
+   No
 
 > Running task 1 of 1: [[ ! -d .git ]] &&  ( git init &&  git add . &&  git commit -m 'initial import'  && git tag 0.0.0) || exit 0
 Initialized empty Git repository in /tmp/cfn-app-runner-custom-domain-provider/.git/
@@ -49,31 +49,36 @@ Initialized empty Git repository in /tmp/cfn-app-runner-custom-domain-provider/.
 ...
 ````
 This creates a project with a working custom provider for the resource `AppRunnerCustomDomain`. Change to 
-the directory and type `make deploy-provider` and `make demo`. Your provider will be up-and-running
+the directory and type `make deploy-repository` `make snapshot`, `make deploy-provider` and `make demo`. Your provider will be up-and-running
 in less than 5 minutes!
 
 ## what is in the box
 When you type `make help`, you will get a list of all of available actions.
 
 ```text
-build                -  build the lambda zip file
+build                -  build container image snapshot
+snapshot             -  build and push container image
+
 fmt                  -  formats the source code
 test                 -  run python unit tests
 test-record          -  run python unit tests, while recording the boto3 calls
 test-templates       -  validate CloudFormation templates
 
-deploy               -  AWS lambda zipfile to bucket
-deploy-all-regions   -  AWS lambda zipfiles to all regional buckets
-undeploy-all-regions -  deletes AWS lambda zipfile of this release from all buckets in all regions
-
 deploy-provider      -  deploys the custom provider
 delete-provider      -  deletes the custom provider
+
+deploy-repository    -  deploys the ECR image repository
+delete-repository    -  deletes the ECR image repository
 
 deploy-pipeline      -  deploys the CI/CD deployment pipeline
 delete-pipeline      -  deletes the CI/CD deployment pipeline
 
 deploy-demo          -  deploys the demo stack
 delete-demo          -  deletes the demo stack
+
+ecr-login            -  login to the ECR repository
+
+show-version         -  shows the current version of the workspace
 
 tag-patch-release    -  create a tag for a new patch release
 tag-minor-release    -  create a tag for a new minor release
@@ -109,17 +114,20 @@ $ make test
 ```
 The integration tests are run against the AWS profile and region you specified.
 
-### Deploy the zip file to the bucket
-To copy the zip file with the source code of the AWS Lambda of the custom resource provider, type:
+### Create the ECR container registry
+To create the container registry, type:
 ```shell
-$ aws s3 mb s3://<bucket-prefix>-<bucket-region>
+$ make deploy-repository
 ```
-As you can see, the zipfile will be copied to a bucket name which consists of the prefix
-and the region name.  This allows the zipfile to be made available for use in
-all regions.
+
+### Deploy the container image
+To deploy the image into the ECR container registry, type:
+```shell
+$ make snapshot
+```
 
 ### Deploy the custom resource provider into the account
-Now the zip file is available, you deploy the custom resource provider, by typing:
+Now the lambda image is available, you deploy the custom resource provider, by typing:
 ```shell
 $ make deploy-provider
 ```
@@ -159,14 +167,6 @@ make show-version
 
 The utility [git-release-tag](https://github.com/binxio/git-release-tag)
 implements this functionality.
-
-### Deploy provider to all regions
-To deploy the current version of your provider to all regions, type:
-
-```shell
-make deploy-all-regions
-```
-This assumes you have buckets in all regions with the defined prefix.
 
 ### Deploy CI/CD pipeline
 To deploy the CI/CD pipeline based on AWS Codebuild, make sure that the AWS account can 

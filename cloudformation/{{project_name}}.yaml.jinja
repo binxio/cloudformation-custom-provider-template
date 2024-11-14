@@ -1,23 +1,21 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: '{{description}}'
-Parameters:
-  S3BucketPrefix:
-    Type: String
-    Default: '{{ s3_bucket_prefix }}'
 Resources:
   CFNCustomProvider:
     Type: AWS::Lambda::Function
     Properties:
       Description: '{{description}}'
+      PackageType: Image
       Code:
-        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-        S3Key: 'lambdas/{{project_name}}-0.0.0.zip'
+        ImageUri: {{ aws_account }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{project_name}}:0.0.0
+      Architectures:
+        - x86_64
       FunctionName: '{{project_name}}'
-      Handler: '{{module_name}}.handler'
       MemorySize: 128
       Timeout: 900
+      LoggingConfig:
+        LogGroup: !Ref LogGroup
       Role: !GetAtt 'LambdaRole.Arn'
-      Runtime: 'python{{python_version}}'
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -40,9 +38,9 @@ Resources:
                 Action:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
-                Resource: !GetAtt 'CFNCustomProviderLogGroup.Arn'
+                Resource: !GetAtt 'LogGroup.Arn'
 
-  CFNCustomProviderLogGroup:
+  LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: '/aws/lambda/{{project_name}}'

@@ -5,15 +5,13 @@
 To install this custom resource provider, type:
 
 ```bash
-aws cloudformation create-stack \
-       --capabilities CAPABILITY_IAM \
-       --stack-name {{project_name}} \
-       --template-url s3://{{s3_bucket_prefix}}-{{aws_region}}/lambdas/{{project_name}}-0.0.0.yaml
-
-aws cloudformation wait stack-create-complete \
-       --stack-name {{project_name}}
+git checkout {{url}}.git
+cd {{ url | basename }}
+aws cloudformation deploy \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --stack-name {{project_name}}
+    --template-file ./cloudformation/{{project_name}}.yaml
 ```
-or use [![](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/new?stackName={{project_name}}&templateURL=https://binxio-public-eu-central-1.s3.amazonaws.com/lambdas/{{project_name}}-0.0.0.yaml)
 
 ## Demo
 To install a simple sample of the custom {{resource_name}} resource, type:
@@ -24,5 +22,5 @@ cd {{ url | basename }}
 aws cloudformation deploy \
     --capabilities CAPABILITY_NAMED_IAM \
     --stack-name {{project_name}}-demo \
-    --template-body file://cloudformation/demo.yaml
+    --template-file ./cloudformation/demo.yaml
 ```

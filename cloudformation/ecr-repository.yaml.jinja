@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Name:
+    Type: String
+    Default: {{ project_name }}
+
+Resources:
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref Name
+      ImageTagMutability: IMMUTABLE
+      RepositoryPolicyText:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: write to owner account
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action:
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:PutImage
+              - ecr:InitiateLayerUpload
+              - ecr:UploadLayerPart
+              - ecr:CompleteLayerUpload
+{%-  if allow_public_access  -%}
+          - Sid: read only access for ecr images
+            Effect: Allow
+            Principal:
+              AWS:
+                - '*'
+            Action:
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+
+          - Sid: read only access for lambda
+            Effect: Allow
+            Principal:
+              AWS:
+                Service: lambda.amazonaws.com
+            Action:
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+            Condition:
+              "ForAnyValue:StringLike":
+                "aws:sourceARN":
+                  - arn:aws:lambda:*:*:function:*
+{%-  endif  -%}

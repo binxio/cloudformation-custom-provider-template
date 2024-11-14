@@ -1,35 +1,27 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Parameters:
-  S3BucketPrefix:
-    Type: String
-    Default: {{ s3_bucket_prefix }}
-
 Resources:
   Project:
     Type: AWS::CodeBuild::Project
+    DependsOn:
+      - LogGroup
     Properties:
-      Name: {{project_name}}
-      Description: '{{project_name}} builder'
+      Name: {{ name }}
+      Description: '{{ name }} builder'
       ServiceRole: !Ref 'ProjectRole'
       Artifacts:
-        Type: no_artifacts
+        Type: NO_ARTIFACTS
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        Image: aws/codebuild/standard:7.0
         PrivilegedMode: true
-        EnvironmentVariables:
-          - Name: LAMBDA_BUCKET_PREFIX
-            Value: !Ref S3BucketPrefix
-            Type: PLAINTEXT
-          - Name: MAKE_TARGET
-            Value: deploy-all-regions
-            Type: PLAINTEXT
       Source:
         Type: GITHUB
-        Location: {{url}}.git
+        Location: {{ url }}
         BuildSpec: .buildspec.yaml
         GitCloneDepth: 0
+        Auth:
+          Type: OAUTH
       Triggers:
         FilterGroups:
          -  - Type: EVENT
@@ -50,37 +42,38 @@ Resources:
             Condition: {}
       Path: /
       Policies:
-        - PolicyName: WriteLambdaZipPermission
+        - PolicyName: LambdaBuilder
           PolicyDocument:
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:ListObjects
-                  - s3:GetBucketLocation
-                Resource: 
-                  - !Sub 'arn:aws:s3:::${S3BucketPrefix}-*'
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:PutObjectAcl
-                Resource: 
-                  - !Sub 'arn:aws:s3:::${S3BucketPrefix}-*/lambdas/{{project_name}}-*'
-              - Effect: Allow
-                Action:
                   - ec2:DescribeRegions
-                Resource: 
+                  - ecr:GetAuthorizationToken
+                Resource:
                   - '*'
+
               - Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                Resource:
+                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/{{project_name}}'
+
+              - Sid: CloudWatchLogsPolicy
+                Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
                   - '*'
-
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/aws/codebuild/${Project}'
+      LogGroupName: '/aws/codebuild/{{  project_name }}'
       RetentionInDays: 7
